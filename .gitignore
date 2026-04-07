@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+env/
+venv/
+
+data/
+
+model/
+*.pkl
+*.joblib
+*.h5
+
+.DS_Store
+Thumbs.db
