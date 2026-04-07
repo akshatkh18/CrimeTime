@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CrimeTime – India Crime Safety Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --safe: #22c55e;
+      --moderate: #f59e0b;
+      --unsafe: #ef4444;
+      --dangerous: #7f1d1d;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    /* NAV */
+    .navbar { background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 1rem 2rem; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+    .navbar .brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-decoration: none; }
+    .navbar .brand span { color: var(--accent); }
+    .navbar .nav-links a { color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; transition: color 0.2s; }
+    .navbar .nav-links a:hover { color: var(--text); }
+
+    /* HERO */
+    .hero { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); padding: 4rem 2rem 3rem; text-align: center; border-bottom: 1px solid var(--border); }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 0.75rem; }
+    .hero h1 span { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem; }
+
+    /* FORM CARD */
+    .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 800px; margin: 0 auto; }
+    .form-card label { color: var(--muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.4rem; }
+    .form-card select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.95rem; width: 100%; outline: none; transition: border-color 0.2s; }
+    .form-card select:focus { border-color: var(--accent); }
+    .form-card select option { background: var(--bg); }
+    .btn-analyze { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin-top: 1rem; transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.03em; }
+    .btn-analyze:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* MAIN CONTENT */
+    .main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+    /* SCORE CARD */
+    .score-section { display: none; }
+    .score-grid { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media(max-width:768px){ .score-grid { grid-template-columns: 1fr; } }
+    .score-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .score-circle { width: 160px; height: 160px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; margin: 0 auto 1rem; border: 6px solid; }
+    .score-number { font-size: 3rem; font-weight: 800; line-height: 1; }
+    .score-label-badge { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.7rem; border-radius: 999px; margin-top: 0.4rem; }
+    .score-card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .score-card .location { color: var(--muted); font-size: 0.9rem; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media(max-width:600px){ .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; text-align: center; }
+    .stat-box .val { font-size: 1.6rem; font-weight: 800; }
+    .stat-box .lbl { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* CHARTS */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media(max-width:900px){ .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; }
+    .chart-card h4 { font-size: 0.95rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-wrap-tall { position: relative; height: 320px; }
+
+    /* DISTRICT TABLE */
+    .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .table-card h4 { font-size: 0.95rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .dt { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .dt th { color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); text-align: left; }
+    .dt td { padding: 0.65rem 0.8rem; border-bottom: 1px solid rgba(51,65,85,0.4); }
+    .dt tr:last-child td { border-bottom: none; }
+    .dt tr.highlight td { background: rgba(99,102,241,0.1); font-weight: 600; }
+    .score-bar { height: 6px; border-radius: 3px; background: var(--border); }
+    .score-bar-fill { height: 6px; border-radius: 3px; transition: width 0.5s; }
+
+    /* SAFE COLORS */
+    .c-safe { color: var(--safe); border-color: var(--safe); background: rgba(34,197,94,0.1); }
+    .c-moderate { color: var(--moderate); border-color: var(--moderate); background: rgba(245,158,11,0.1); }
+    .c-unsafe { color: var(--unsafe); border-color: var(--unsafe); background: rgba(239,68,68,0.1); }
+    .c-dangerous { color: #ef4444; border-color: #7f1d1d; background: rgba(127,29,29,0.2); }
+
+    /* LOADER */
+    .loader { display: none; text-align: center; padding: 3rem; }
+    .spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ERROR */
+    .error-box { display: none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 1rem 1.5rem; color: #fca5a5; margin-bottom: 1rem; }
+
+    footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="brand" href="/"><Crime<span>Crime Time</span></a>
+  <div class="nav-links">
+    <a href="/">Analyzer</a>
+    <a href="/eda">EDA & Insights</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>India District <span>Crime Safety</span> Analyzer</h1>
+  <p>AI-powered safety analysis across 800+ Indian districts using NCRB data </p>
+  <div class="form-card">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label>State / UT</label>
+        <select id="stateSelect" onchange="loadDistricts()">
+          <option value="">— Select State —</option>
+          {% for s in states %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label>District</label>
+        <select id="districtSelect" disabled>
+          <option value="">— Select District —</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label>Year</label>
+        <select id="yearSelect">
+          {% for y in years|reverse %}
+          <option value="{{ y }}">{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button class="btn-analyze" onclick="analyze()" id="analyzeBtn">🔍 Analyze Safety</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="error-box" id="errorBox"></div>
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p style="color:var(--muted)">Analyzing crime data...</p>
+  </div>
+
+  <div class="score-section" id="scoreSection">
+
+    <!-- Score + Stats -->
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="score-circle" id="scoreCircle">
+          <div class="score-number" id="scoreNumber">--</div>
+          <div class="score-label-badge" id="scoreBadge">--</div>
+        </div>
+        <h3 id="districtName">--</h3>
+        <div class="location" id="stateName">--</div>
+        <div style="color:var(--muted);font-size:0.8rem;margin-top:0.5rem" id="yearLabel">--</div>
+      </div>
+      <div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="val" id="statTotal">--</div>
+            <div class="lbl">Total IPC Crimes</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="statStateAvg">--</div>
+            <div class="lbl">State Avg Score</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="statNatlAvg">--</div>
+            <div class="lbl">National Avg Score</div>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-top:1rem">
+          <h4>Crime Type Breakdown</h4>
+          <div class="chart-wrap"><canvas id="crimeBarChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend + Comparison -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Crime Trend Over Years</h4>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Safety Score Trend</h4>
+        <div class="chart-wrap"><canvas id="scoreTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- District Comparison Table -->
+    <div class="table-card">
+      <h4>District Comparison (Same State)</h4>
+      <div style="overflow-x:auto">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>District</th>
+              <th>Safety Score</th>
+              <th>Total Crimes</th>
+              <th>Score Bar</th>
+            </tr>
+          </thead>
+          <tbody id="compTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- <footer>CrimeTime &mdash; Minor Project | JECRC University |</footer> -->
+
+<script>
+let barChart, trendChart, scoreTrendChart;
+
+async function loadDistricts() {
+  const state = document.getElementById('stateSelect').value;
+  const dd = document.getElementById('districtSelect');
+  dd.disabled = true;
+  dd.innerHTML = '<option>Loading...</option>';
+  if (!state) { dd.innerHTML = '<option>— Select District —</option>'; return; }
+  const res = await fetch(`/get_districts?state=${encodeURIComponent(state)}`);
+  const districts = await res.json();
+  dd.innerHTML = '<option value="">— Select District —</option>' + districts.map(d => `<option value="${d}">${d}</option>`).join('');
+  dd.disabled = false;
+}
+
+async function analyze() {
+  const state = document.getElementById('stateSelect').value;
+  const district = document.getElementById('districtSelect').value;
+  const year = document.getElementById('yearSelect').value;
+  if (!state || !district) { showError('Please select both State and District.'); return; }
+
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('scoreSection').style.display = 'none';
+  document.getElementById('loader').style.display = 'block';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state, district, year })
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    renderResults(data);
+  } catch(e) {
+    showError('Something went wrong. Please try again.');
+  } finally {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = false;
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+function labelClass(label) {
+  return { Safe: 'c-safe', Moderate: 'c-moderate', Unsafe: 'c-unsafe', Dangerous: 'c-dangerous' }[label] || '';
+}
+function labelColor(label) {
+  return { Safe: '#22c55e', Moderate: '#f59e0b', Unsafe: '#ef4444', Dangerous: '#ef4444' }[label] || '#94a3b8';
+}
+
+function renderResults(d) {
+  document.getElementById('scoreSection').style.display = 'block';
+  const cls = labelClass(d.safety_label);
+
+  // Score circle
+  const circle = document.getElementById('scoreCircle');
+  circle.className = 'score-circle ' + cls;
+  document.getElementById('scoreNumber').textContent = d.safety_score;
+  const badge = document.getElementById('scoreBadge');
+  badge.textContent = d.safety_label;
+  badge.className = 'score-label-badge ' + cls;
+
+  document.getElementById('districtName').textContent = d.district;
+  document.getElementById('stateName').textContent = d.state;
+  document.getElementById('yearLabel').textContent = `Data Year: ${d.year}`;
+  document.getElementById('statTotal').textContent = d.total_crimes.toLocaleString('en-IN');
+  document.getElementById('statStateAvg').textContent = d.state_avg_score;
+  document.getElementById('statNatlAvg').textContent = d.national_avg_score;
+
+  // Crime bar chart
+  const labels = Object.keys(d.crime_breakdown).map(k => k.length > 22 ? k.substring(0,22)+'…' : k);
+  const vals = Object.values(d.crime_breakdown);
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('crimeBarChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: vals, backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.5)' } }
+      }
+    }
+  });
+
+  // Trend chart
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: d.year_trend.years,
+      datasets: [{
+        label: 'Total Crimes',
+        data: d.year_trend.crimes,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.15)',
+        fill: true, tension: 0.4, pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.5)' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.5)' } }
+      }
+    }
+  });
+
+  // Score trend
+  if (scoreTrendChart) scoreTrendChart.destroy();
+  scoreTrendChart = new Chart(document.getElementById('scoreTrendChart'), {
+    type: 'line',
+    data: {
+      labels: d.year_trend.years,
+      datasets: [{
+        label: 'Safety Score',
+        data: d.year_trend.scores,
+        borderColor: labelColor(d.safety_label),
+        backgroundColor: 'rgba(34,197,94,0.1)',
+        fill: true, tension: 0.4, pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.5)' } },
+        y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.5)' } }
+      }
+    }
+  });
+
+  // Comparison table
+  const tbody = document.getElementById('compTableBody');
+  tbody.innerHTML = d.district_comparison.map((r, i) => {
+    const isThis = r.DISTRICT === d.district;
+    const score = parseFloat(r.SAFETY_SCORE);
+    const barColor = score >= 75 ? '#22c55e' : score >= 50 ? '#f59e0b' : score >= 25 ? '#ef4444' : '#7f1d1d';
+    return `<tr class="${isThis ? 'highlight' : ''}">
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${r.DISTRICT}${isThis ? ' <span style="font-size:0.7rem;color:#6366f1">▶ YOU</span>' : ''}</td>
+      <td style="font-weight:700">${score.toFixed(1)}</td>
+      <td>${parseInt(r['TOTAL IPC CRIMES']).toLocaleString('en-IN')}</td>
+      <td style="min-width:100px">
+        <div class="score-bar"><div class="score-bar-fill" style="width:${score}%;background:${barColor}"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('scoreSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
