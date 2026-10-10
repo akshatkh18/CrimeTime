@@ -3,16 +3,16 @@ import pandas as pd
 import numpy as np
 import pickle
 import json
-import os
+from pathlib import Path
 
 app = Flask(__name__)
 
-BASE = os.path.dirname(__file__)
-CLEANED_PATH = os.path.join(BASE, 'data', 'cleaned.csv')
-EDA_PATH = os.path.join(BASE, 'data', 'eda_stats.json')
-MODEL_PATH = os.path.join(BASE, 'model', 'rf_model.pkl')
-ENCODER_PATH = os.path.join(BASE, 'model', 'encoders.pkl')
-METRICS_PATH = os.path.join(BASE, 'model', 'metrics.json')
+BASE = Path(__file__).resolve().parent
+CLEANED_PATH = BASE / 'data' / 'cleaned.csv'
+EDA_PATH = BASE / 'data' / 'eda_stats.json'
+MODEL_PATH = BASE / 'model' / 'rf_model.pkl'
+ENCODER_PATH = BASE / 'model' / 'encoders.pkl'
+METRICS_PATH = BASE / 'model' / 'metrics.json'
 
 # Load everything at startup
 df = pd.read_csv(CLEANED_PATH)

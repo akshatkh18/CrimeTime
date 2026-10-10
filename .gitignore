@@ -3,10 +3,15 @@ __pycache__/
 
 env/
 venv/
+ctenv/
+.venv/
+.vercel/
+.env
+.env.*
 
-data/
+/data/*
 
-model/
+/model/*
 *.pkl
 *.joblib
 *.h5
@@ -14,3 +19,10 @@ model/
 .DS_Store
 Thumbs.db
 *.csv
+
+# Only the existing artifacts needed when app.py imports.
+!/data/cleaned.csv
+!/data/eda_stats.json
+!/model/rf_model.pkl
+!/model/encoders.pkl
+!/model/metrics.json
